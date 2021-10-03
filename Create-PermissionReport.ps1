@@ -36,9 +36,16 @@ function NewUser(){
         fullName = ''
     };
 
-    $user = New-Object psobject -Property $props;
+    $user = New-Object psobject -Property $props; return $user;
+}
 
-    return $user;
+#Creates a new custom defined 'Permission' object
+function NewPermission(){
+
+    $props = @{
+    
+    };
+
 }
 
 
