@@ -43,12 +43,44 @@ function NewUser(){
 function NewPermission(){
 
     $props = @{
-    
+        User = null
+        source = ''
+        read = null
+        write = null
+        execute = null
+
     };
+
+    $permission = New-Object psobject -Property $props; return $permission;
 
 }
 
+#Creates a new custom defined 'Directory' object
+function NewDirectory(){
+
+    $props = @{
+        name = ''
+        path = ''
+        permissions = @()
+        reference = null
+    };
+
+    $directory = New-Object psobject -Property $props; return $directory;
+
+}
 
 *************************************************************************************
 #                         DEFINE HELPER METHODS
+*************************************************************************************
+
+
+
+
+*************************************************************************************
+#                         TEST CODE
+*************************************************************************************
+
+
+*************************************************************************************
+#                         BEGIN PROCESSING
 *************************************************************************************
