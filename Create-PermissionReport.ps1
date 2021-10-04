@@ -43,11 +43,11 @@ function NewUser(){
 function NewPermission(){
 
     $props = @{
-        User = null
+        User = $null
         source = ''
-        read = null
-        write = null
-        execute = null
+        read = $null
+        write = $null
+        execute = $null
 
     };
 
@@ -62,7 +62,7 @@ function NewDirectory(){
         name = ''
         path = ''
         permissions = @()
-        reference = null
+        reference = $null
     };
 
     $directory = New-Object psobject -Property $props; return $directory;
@@ -97,8 +97,13 @@ if( $path -NE '.' ){
 #                         VARIABLE DECLARATION
 #*************************************************************************************
 
-$RootPath = '';
-$_RootDir = null;
+#Create root directory object
+$_RootDir = NewDirectory;
+$_RootDir.path = Resolve-Path -Path $path;
+$_RootDir.name = Split-Path $_RootDir.path -Leaf;
+
+
+
 
 
 #*************************************************************************************
@@ -106,7 +111,7 @@ $_RootDir = null;
 #*************************************************************************************
 
 #Check root directory
-logY("The root directory is ["+$RootPath+"]")
+logY("The root directory is ["+$_RootDir.path+"]")
 
 #Read all entries from the root directory
 
