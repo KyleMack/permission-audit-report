@@ -80,25 +80,25 @@ function logY($msg){ Write-Host $msg -ForegroundColor Yellow }
 
 
 #*************************************************************************************
-#                         INITALATION / VALIDATION
+#                         INITIAL VALIDATION
 #*************************************************************************************
-
-$_RootDir = '';
 
 #Check that there is a valid directory
 #If the path is default, use the current directory
-if( $path -EQ '.' ){
-    $_RootDir = Get-Location;
+if( $path -NE '.' ){
 
-#If the path was passed, only continue if it is valid
-} else {
-    if( [System.IO.Directory]::Exists($path) ){
-        $_RootDir = $Path;
-    } else {
+    if( ![System.IO.Directory]::Exists($path) ){
         throw "Cannot find specified path"
     }
+
 }
 
+#*************************************************************************************
+#                         VARIABLE DECLARATION
+#*************************************************************************************
+
+$RootPath = '';
+$_RootDir = null;
 
 
 #*************************************************************************************
@@ -106,11 +106,14 @@ if( $path -EQ '.' ){
 #*************************************************************************************
 
 #Check root directory
-logY("The root directory is ["+$_RootDir+"]")
+logY("The root directory is ["+$RootPath+"]")
 
 #Read all entries from the root directory
+
 
 
 #*************************************************************************************
 #                         BEGIN PROCESSING
 #*************************************************************************************
+
+#TODO: Create Directory Object
