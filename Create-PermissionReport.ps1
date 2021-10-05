@@ -63,6 +63,7 @@ function NewDirectory(){
         path = ''
         permissions = @()
         reference = $null
+        children = @()
     };
 
     $directory = New-Object psobject -Property $props; return $directory;
@@ -111,7 +112,7 @@ $_RootDir.name = Split-Path $_RootDir.path -Leaf;
 #*************************************************************************************
 
 #Check root directory
-logY("The root directory is ["+$_RootDir.path+"]")
+logY("The root directory is ["+$_RootDir.name+"]["+$_RootDir.path+"]")
 
 #Read all entries from the root directory
 
