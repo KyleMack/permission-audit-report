@@ -100,10 +100,13 @@ if( $path -NE '.' ){
 
 #Create root directory object
 $_RootDir = NewDirectory;
-$_RootDir.path = Resolve-Path -Path $path;
+$_RootDir.path = (Resolve-Path -Path $path).Path;
 $_RootDir.name = Split-Path $_RootDir.path -Leaf;
 
-
+#Set processing flags
+$folderFlag = $CheckFolders;
+$fileFlag = $CheckFiles;
+$recursiveFlag = $TraverseSubFolders;
 
 
 
@@ -114,12 +117,30 @@ $_RootDir.name = Split-Path $_RootDir.path -Leaf;
 #Check root directory
 logY("The root directory is ["+$_RootDir.name+"]["+$_RootDir.path+"]")
 
-#Read all entries from the root directory
-
 
 
 #*************************************************************************************
 #                         BEGIN PROCESSING
 #*************************************************************************************
 
-#TODO: Create Directory Object
+#Get all children from the root directory and add to Root.children
+#Only pull if enabled
+if($folderFlag){
+    $_RootDir.children += (Get-ChildItem -Path $_RootDir.path -Directory | %{ 
+        $dir = NewDirectory;
+        $dir.name = $_.Name;
+        $dir.path = (Resolve-path -Path ($_RootDir.path + "\\" + $_.Name)).Path;
+        $dir;
+     } )
+}
+if($fileFlag){
+    $_RootDir.children += Get-ChildItem -Path $_RootDir.path -File
+}
+
+#*************************************************************************************
+#                         TEST CODE
+#*************************************************************************************
+
+#Display found child items
+
+$_RootDir.children | ForEach-Object { logY("Child of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
