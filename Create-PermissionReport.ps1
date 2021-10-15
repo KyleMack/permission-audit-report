@@ -43,12 +43,8 @@ function NewUser(){
 function NewPermission(){
 
     $props = @{
-        User = $null
-        source = ''
-        read = $null
-        write = $null
-        execute = $null
-
+        Identity = ''
+        Inherited = $null
     };
 
     $permission = New-Object psobject -Property $props; return $permission;
@@ -63,7 +59,8 @@ function NewDirectory(){
         path = ''
         permissions = @()
         reference = $null
-        children = @()
+        subfolders = @()
+        subfiles = @()
     };
 
     $directory = New-Object psobject -Property $props; return $directory;
@@ -123,10 +120,10 @@ logY("The root directory is ["+$_RootDir.name+"]["+$_RootDir.path+"]")
 #                         BEGIN PROCESSING
 #*************************************************************************************
 
-#Get all children from the root directory and add to Root.children
+#Get all children from the root directory and add to Root.subfolders & Root.subfiles
 #Only pull if enabled
 if($folderFlag){
-    $_RootDir.children += (Get-ChildItem -Path $_RootDir.path -Directory | %{ 
+    $_RootDir.subfolders += (Get-ChildItem -Path $_RootDir.path -Directory | %{ 
         $dir = NewDirectory;
         $dir.name = $_.Name;
         $dir.path = (Resolve-path -Path ($_RootDir.path + "\\" + $_.Name)).Path;
@@ -134,8 +131,23 @@ if($folderFlag){
      } )
 }
 if($fileFlag){
-    $_RootDir.children += Get-ChildItem -Path $_RootDir.path -File
+    $_RootDir.subfiles += Get-ChildItem -Path $_RootDir.path -File | %{
+        $file = $_.Name;
+        $file;
+    }
 }
+
+#Starting with the root, process through each subfolder and store the permissions
+Get-ACL $_RootDir.Path | %{ 
+        
+        $ace = NewPermission;
+        $ace.Identity = $_.Access.IdentityReference;
+        $ace.Inherited = $_.Access.IsInherited; 
+        $ace;
+    }
+
+
+
 
 #*************************************************************************************
 #                         TEST CODE
@@ -143,4 +155,5 @@ if($fileFlag){
 
 #Display found child items
 
-$_RootDir.children | ForEach-Object { logY("Child of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
+#$_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
+$_RootDir.subfiles | ForEach-Object { logY("Subfile of root ["+$_RootDir.name+"] found: ["+$_+"]"); }
