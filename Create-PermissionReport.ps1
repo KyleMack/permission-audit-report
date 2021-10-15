@@ -19,10 +19,11 @@ param(
     [boolean]$CheckFiles = $True,
 
     [Parameter(Mandatory=$False,HelpMessage="Output folder permissions (Default:True)")]
-    [boolean]$CheckFolders = $True
-)
+    [boolean]$CheckFolders = $True,
 
-#TODO: ADD PARAMETER FOR LIST OF FILTERABLE PERMISSION LEAF NAMES
+    [Parameter(Mandatory=$False,HelpMessage="List of permission names to exclude from output (Default:False)")]
+    [string]$ExcludedGroups = ''
+)
 
 
 #*************************************************************************************
@@ -122,7 +123,8 @@ $folderFlag = $CheckFolders;
 $fileFlag = $CheckFiles;
 $recursiveFlag = $TraverseSubFolders;
 
-
+#Additional variables
+$excludedGroups = ($ExcludedGroups -eq '') ? "" : "" ;
 
 #*************************************************************************************
 #                         TEST CODE
@@ -143,7 +145,7 @@ if($folderFlag){
     $_RootDir.subfolders += (Get-ChildItem -Path $_RootDir.path -Directory | %{ 
         $dir = NewDirectory;
         $dir.name = $_.Name;
-        $dir.path = (Resolve-path -Path ($_RootDir.path + "\\" + $_.Name)).Path;
+        $dir.path = (Resolve-path -Path ($_RootDir.path + "\" + $_.Name)).Path;
         $dir;
      } )
 }
@@ -162,7 +164,7 @@ $totalSubfolders = $_RootDir.subfolders.length;
 for ($i = 0; $i -lt $totalSubfolders; $i++){
     #Assign folder by reference
     $folder = [ref]$_RootDir.subfolders[$i];
-    $folder.permissions = GetPermissions($folder.path);
+    $folder.Value.permissions = GetPermissions($folder.Value.path);
 }
 
 
@@ -176,3 +178,5 @@ $_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.nam
 #$_RootDir.subfiles | ForEach-Object { logY("Subfile of root ["+$_RootDir.name+"] found: ["+$_+"]"); }
 $_RootDir.permissions | ForEach-Object { logG("Permission on root found: ["+$_.Identity+"]"); }
 $_RootDir.subfolders | %{ $name = $_.name; $_.permissions | %{ logY("Permission on folder ["+$name+"] found: ["+$_.Identity+"]"); } }
+
+
