@@ -88,6 +88,8 @@ function GetPermissions($path){
             $ace;
     } )
 
+    $permissions;
+
 }
 
 
@@ -153,21 +155,14 @@ if($fileFlag){
 }
 
 #Starting with the root, process through each subfolder and store the permissions
-$_RootDir.permissions += ((Get-ACL $_RootDir.Path).Access | %{ 
-        
-        $ace = NewPermission;
-        $ace.Identity = $_.IdentityReference;
-        $ace.Inherited = $_.IsInherited; 
-        $ace;
-    } )
+$_RootDir.permissions = GetPermissions($_RootDir.path);
 
 #Process permissions for each subfolder
 $totalSubfolders = $_RootDir.subfolders.length;
 for ($i = 0; $i -lt $totalSubfolders; $i++){
     #Assign folder by reference
     $folder = [ref]$_RootDir.subfolders[$i];
-
-
+    $folder.permissions = GetPermissions($folder.path);
 }
 
 
@@ -178,5 +173,6 @@ for ($i = 0; $i -lt $totalSubfolders; $i++){
 #Display found child items
 
 $_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
-$_RootDir.subfiles | ForEach-Object { logY("Subfile of root ["+$_RootDir.name+"] found: ["+$_+"]"); }
-$_RootDir.permissions | ForEach-Object { logY("Permission on root found: ["+$_.Identity+"]"); }
+#$_RootDir.subfiles | ForEach-Object { logY("Subfile of root ["+$_RootDir.name+"] found: ["+$_+"]"); }
+$_RootDir.permissions | ForEach-Object { logG("Permission on root found: ["+$_.Identity+"]"); }
+$_RootDir.subfolders | %{ $name = $_.name; $_.permissions | %{ logY("Permission on folder ["+$name+"] found: ["+$_.Identity+"]"); } }
