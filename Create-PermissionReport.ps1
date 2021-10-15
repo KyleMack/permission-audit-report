@@ -22,6 +22,8 @@ param(
     [boolean]$CheckFolders = $True
 )
 
+#TODO: ADD PARAMETER FOR LIST OF FILTERABLE PERMISSION LEAF NAMES
+
 
 #*************************************************************************************
 #                         DEFINE CLASS CONSTRUCTORS
@@ -74,6 +76,19 @@ function NewDirectory(){
 function logR($msg){ Write-Host $msg -ForegroundColor Red }
 function logG($msg){ Write-Host $msg -ForegroundColor Green }
 function logY($msg){ Write-Host $msg -ForegroundColor Yellow }
+
+#Create permission objects for each 
+function GetPermissions($path){
+
+    $permissions = @();
+    $permissions += ((Get-ACL $path).Access | %{
+            $ace = NewPermission;
+            $ace.Identity = $_.IdentityReference;
+            $ace.Inherited = $_.IsInherited; 
+            $ace;
+    } )
+
+}
 
 
 
@@ -138,15 +153,22 @@ if($fileFlag){
 }
 
 #Starting with the root, process through each subfolder and store the permissions
-Get-ACL $_RootDir.Path | %{ 
+$_RootDir.permissions += ((Get-ACL $_RootDir.Path).Access | %{ 
         
         $ace = NewPermission;
-        $ace.Identity = $_.Access.IdentityReference;
-        $ace.Inherited = $_.Access.IsInherited; 
+        $ace.Identity = $_.IdentityReference;
+        $ace.Inherited = $_.IsInherited; 
         $ace;
-    }
+    } )
+
+#Process permissions for each subfolder
+$totalSubfolders = $_RootDir.subfolders.length;
+for ($i = 0; $i -lt $totalSubfolders; $i++){
+    #Assign folder by reference
+    $folder = [ref]$_RootDir.subfolders[$i];
 
 
+}
 
 
 #*************************************************************************************
@@ -155,5 +177,6 @@ Get-ACL $_RootDir.Path | %{
 
 #Display found child items
 
-#$_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
+$_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
 $_RootDir.subfiles | ForEach-Object { logY("Subfile of root ["+$_RootDir.name+"] found: ["+$_+"]"); }
+$_RootDir.permissions | ForEach-Object { logY("Permission on root found: ["+$_.Identity+"]"); }
