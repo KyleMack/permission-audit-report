@@ -21,7 +21,7 @@ param(
     [Parameter(Mandatory=$False,HelpMessage="Output folder permissions (Default:True)")]
     [boolean]$CheckFolders = $True,
 
-    [Parameter(Mandatory=$False,HelpMessage="List of permission names to exclude from output (Default:False)")]
+    [Parameter(Mandatory=$False,HelpMessage="List of permission names to exclude from output in CSV format(Default:False)")]
     [string]$ExcludedGroups = ''
 )
 
@@ -30,7 +30,7 @@ param(
 #                         DEFINE CLASS CONSTRUCTORS
 #*************************************************************************************
 
-#Creates a new custom defined 'User' object
+#Used to hold user information related to permissions
 function NewUser(){
 
     $props = @{
@@ -42,11 +42,12 @@ function NewUser(){
     $user = New-Object psobject -Property $props; return $user;
 }
 
-#Creates a new custom defined 'Permission' object
+#Used to hold information related to permissions / ACEs
 function NewPermission(){
 
     $props = @{
         Identity = ''
+        Leaf = ''
         Inherited = $null
     };
 
@@ -54,7 +55,7 @@ function NewPermission(){
 
 }
 
-#Creates a new custom defined 'Directory' object
+#Used to hold information related to directories
 function NewDirectory(){
 
     $props = @{
@@ -70,6 +71,18 @@ function NewDirectory(){
 
 }
 
+#Used to hold the security group filters
+function NewGroupFilter(){
+    
+    $props = @{
+        active = $False
+        fullString = ''
+        filters = @()
+    };
+
+    $groupFilter = New-Object psobject -Property $props; return $groupFilter;
+}
+
 #*************************************************************************************
 #                         DEFINE HELPER METHODS
 #*************************************************************************************
@@ -79,15 +92,19 @@ function logG($msg){ Write-Host $msg -ForegroundColor Green }
 function logY($msg){ Write-Host $msg -ForegroundColor Yellow }
 
 #Create permission objects for each 
-function GetPermissions($path){
+function GetPermissions($path, $filters){
 
+    #Create array to hold all filter objects
     $permissions = @();
-    $permissions += ((Get-ACL $path).Access | %{
-            $ace = NewPermission;
-            $ace.Identity = $_.IdentityReference;
-            $ace.Inherited = $_.IsInherited; 
-            $ace;
-    } )
+    #Process through each access object from Get-ACL
+#    $permissions += (  (Get-ACL $path).Access | Where-Object { (!$filters.active) -or ($filters.filters.Contains( ($_.IdentityReference -Split "\\")[-1] )) } | %{
+#            $ace = NewPermission;
+#            $ace.Identity = $_.IdentityReference;
+#            $ace.Inherited = $_.IsInherited; 
+#            $ace;
+#    } );
+
+    $permissions +=  ( (Get-ACL $path).Access | %{ ($_.IdentityReference -split "\\")[-1]; } | Where-Object { return $false; });
 
     $permissions;
 
@@ -124,14 +141,21 @@ $fileFlag = $CheckFiles;
 $recursiveFlag = $TraverseSubFolders;
 
 #Additional variables
-$excludedGroups = ($ExcludedGroups -eq '') ? "" : "" ;
+#Check if group exclusions were passed
+$GroupFilter = NewGroupFilter;
+$GroupFilter.active = $False;
+if($ExcludedGroups -ne ''){
+    $GroupFilter.filters += ($ExcludedGroups -Split ",");
+    $GroupFilter.active = $True;
+}
 
 #*************************************************************************************
 #                         TEST CODE
 #*************************************************************************************
 
 #Check root directory
-logY("The root directory is ["+$_RootDir.name+"]["+$_RootDir.path+"]")
+logY("The root directory is ["+$_RootDir.name+"]["+$_RootDir.path+"]");
+logR("Filters Active: ["+$GroupFilter.active+"]. Filter List: ["+$GroupFilter.filters+"]");
 
 
 
@@ -157,14 +181,14 @@ if($fileFlag){
 }
 
 #Starting with the root, process through each subfolder and store the permissions
-$_RootDir.permissions = GetPermissions($_RootDir.path);
+$_RootDir.permissions = GetPermissions($_RootDir.path, $GroupFilter);
 
 #Process permissions for each subfolder
 $totalSubfolders = $_RootDir.subfolders.length;
 for ($i = 0; $i -lt $totalSubfolders; $i++){
     #Assign folder by reference
     $folder = [ref]$_RootDir.subfolders[$i];
-    $folder.Value.permissions = GetPermissions($folder.Value.path);
+    $folder.Value.permissions = GetPermissions($folder.Value.path, $GroupFilter);
 }
 
 
@@ -174,9 +198,9 @@ for ($i = 0; $i -lt $totalSubfolders; $i++){
 
 #Display found child items
 
-$_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
+#$_RootDir.subfolders | ForEach-Object { logY("Subfolder of root ["+$_RootDir.name+"] found: ["+$_.name+"]"); }
 #$_RootDir.subfiles | ForEach-Object { logY("Subfile of root ["+$_RootDir.name+"] found: ["+$_+"]"); }
-$_RootDir.permissions | ForEach-Object { logG("Permission on root found: ["+$_.Identity+"]"); }
-$_RootDir.subfolders | %{ $name = $_.name; $_.permissions | %{ logY("Permission on folder ["+$name+"] found: ["+$_.Identity+"]"); } }
+$_RootDir.permissions | ForEach-Object { logG("Permission on root found: ["+$_+"]"); }
+#$_RootDir.subfolders | %{ $name = $_.name; $_.permissions | %{ logY("Permission on folder ["+$name+"] found: ["+$_.Identity+"]"); } }
 
 
